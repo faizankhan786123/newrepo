@@ -1,0 +1,428 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "SMS Interceptor API",
+    "description": "Pass-through APIs provided by SMS Interceptor. These APIs act as a proxy for Infobip APIs.\n\n- **Send Event API**: Forwards event requests to Infobip's send event API.\n- **Send SMS API**: Forwards SMS requests to Infobip's send SMS API.\n\nRequests are processed asynchronously, meaning they are acknowledged immediately and later processed in a queue.\n\n**Pre-requisites**:\n1. The IP of the host system needs to be whitelisted at SMS Interceptor. \n2. A unique identifier for the host system sending requests must be defined and included in the API request headers.\n3. Required Events and flows need to be defined in the Infobip portal, with the help of SMS-Support team.\n",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:9243/sms-receiver",
+      "description": "Local Server"
+    },
+    {
+      "url": "https://sms-interceptor-dev.rakbanktst.ae/sms-receiver",
+      "description": "DEV Server"
+    },
+    {
+      "url": "https://sms-interceptor-uat.rakbanktst.ae/sms-receiver",
+      "description": "UAT Server"
+    },
+    {
+      "url": "https://sms-interceptor.rakbank.ae/sms-receiver",
+      "description": "Prod Server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Infobip Passthrough APIs"
+    }
+  ],
+  "paths": {
+    "/peopleevents/2/persons/{ccifRcifId}/definitions/{eventId}/events": {
+      "post": {
+        "operationId": "handleEventRouting",
+        "summary": "This endpoint can be used to trigger an Infobip Event",
+        "tags": [
+          "Infobip Passthrough APIs"
+        ],
+        "parameters": [
+          {
+            "name": "source",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "DIGITAL_ASSETS"
+            },
+            "description": "A unique identifier for the host system sending the request. This value should be constant and unique for the system.\nExamples include:\n- \"CPF\" \n- \"DIGITAL_ASSETS\"\n"
+          },
+          {
+            "name": "isSensitiveAlert",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Y",
+                "N"
+              ],
+              "example": "N"
+            },
+            "description": "An optional header that indicates whether the content of the alert is sensitive.\nIf not present, the default value is \"N\".\n- \"Y\" means the content is sensitive and should be encrypted before storing in the SMS Interceptor DB.\n- \"N\" means the content is non-sensitive and stored in plain text.\n"
+          },
+          {
+            "name": "ccifRcifId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "2086942.2086942",
+            "description": "Cif ID of the customer in CCIF.RCIF format.\nValid format is 'XXXXXXX.XXXXXXX' (7 digits.7 digits)\n"
+          },
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Event/ Alert ID defined in Infobip",
+            "example": "CPFCOMMPREF1"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InfoBipSendEventRQ"
+              },
+              "example": {
+                "properties": {
+                  "dynamicKey1": "value1",
+                  "dynamicKey2": "value2"
+                },
+                "fallbackDetails": {
+                  "mobileNo": "971586660000",
+                  "smsMessage": "Fallback SMS message in case of failure."
+                }
+              }
+            }
+          },
+          "required": true,
+          "description": "The request body represents the event details that need to be forwarded to Infobip.\n- `properties`: The dynamic key-value pairs representing the placeholders defined in the Infobip event template.\n- `fallbackDetails`: (Optional) Contains fallback information for sending SMS if the event fails, including a mobile number (`mobileNo`) and a formed SMS message (`smsMessage`).\n"
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SMSMessageRouteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "timestamp": "2025-02-25T06:02:59.737+00:00",
+                  "status": 400,
+                  "error": "Bad Request",
+                  "message": "Invalid CCIF.RCIF ID format.",
+                  "path": "/sms-receiver/SMS/peopleevents/2/persons/2086942.2086942/definitions/DBACTIVATION/events"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Access Denied if IP is not whitelisted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "timestamp": "2025-02-25T13:33:16.203+00:00",
+                  "status": 401,
+                  "error": "Unauthorized",
+                  "message": "Unauthorized host IP address: 10.15.24.37",
+                  "path": "sms-receiver/SMS/peopleevents/2/persons/2086942.2086942/definitions/DBACTIVATION/events"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "timestamp": "2025-02-25T06:02:59.737+00:00",
+                  "status": 500,
+                  "error": "Internal Server Error",
+                  "message": "Unhandled exception occurred",
+                  "path": "/sms-receiver/SMS/peopleevents/2/persons/2086942.2086942/definitions/DBACTIVATION/events"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sms/2/text/advanced": {
+      "post": {
+        "tags": [
+          "Infobip Passthrough APIs"
+        ],
+        "operationId": "handleSmsRouting",
+        "summary": "This endpoint can be used to send SMS via Infobip",
+        "parameters": [
+          {
+            "name": "source",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "CPF"
+            },
+            "description": "A unique identifier for the host system sending the request. This value should be constant and unique for the system.\nExamples include:\n- \"CPF\" \n- \"DIGITAL_ASSETS\" \n"
+          },
+          {
+            "name": "isSensitiveAlert",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Y",
+                "N"
+              ],
+              "example": "N"
+            },
+            "description": "An optional header that indicates whether the content of the alert is sensitive.\nIf not present, the default value is \"N\".\n- \"Y\" means the content is sensitive and should be encrypted before storing in the SMS Interceptor DB.\n- \"N\" means the content is non-sensitive and stored in plain text.\n"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InfoBipSendSMSRQ"
+              },
+              "example": {
+                "messages": [
+                  {
+                    "sender": "RAKBANK",
+                    "destinations": [
+                      {
+                        "to": "971586660000"
+                      }
+                    ],
+                    "content": {
+                      "text": "This is a sample message"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "description": "The request body represents the SMS message that needs to be forwarded to Infobip.\n- `sender`: The name of the sender, in this case, it is always \"RAKBANK\".\n- `destinations.to`: The mobile number where the SMS should be sent. It **cannot** be empty and must match the format `(^\\+?[0-9]{9,15}$)` for valid phone numbers (optional `+` followed by 9 to 15 digits).\n- `content.text`: The actual message to be sent to the recipient. It **cannot** be empty.\n- The SMS Interceptor Pass-Through API is designed for sending only one SMS to a single customer per request. It **does not support bulk** messaging.\n  - The request must contain exactly one message inside the messages array.\n  - Each message must have only one recipient (to field in destinations).\n",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SMSMessageRouteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "timestamp": "2025-02-25T06:02:59.737+00:00",
+                  "status": 400,
+                  "error": "Bad Request",
+                  "message": "Invalid request: missing 'to' field in request body.",
+                  "path": "/sms-receiver/SMS/sms/2/text/advanced"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Access Denied if IP is not whitelisted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "timestamp": "2025-02-25T13:33:16.203+00:00",
+                  "status": 401,
+                  "error": "Unauthorized",
+                  "message": "Unauthorized host IP address: 10.15.24.37",
+                  "path": "/sms-receiver/SMS/sms/2/text/advanced"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "timestamp": "2025-02-25T06:02:59.737+00:00",
+                  "status": 500,
+                  "error": "Internal Server Error",
+                  "message": "Unhandled exception occured",
+                  "path": "/sms-receiver/SMS/sms/2/text/advanced"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Destination": {
+        "type": "object",
+        "properties": {
+          "to": {
+            "type": "string",
+            "description": "Mobile number in the destination. Must match the format `(^\\+?[0-9]{9,15}$)` and cannot be empty.\n"
+          }
+        }
+      },
+      "InfoBipSendSMSRQ": {
+        "type": "object",
+        "description": "Represents the request body format for sending an SMS. It contains a list of messages, each with sender, destinations, and content.\n",
+        "properties": {
+          "messages": {
+            "type": "array",
+            "description": "A list of messages that need to be sent. Each message contains a sender, destinations, and content.\n",
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            }
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "sender": {
+            "type": "string",
+            "description": "The sender's identifier. In this case, it is always \"RAKBANK\".\n"
+          },
+          "destinations": {
+            "type": "array",
+            "description": "List of destinations for the message, each containing a mobile number to which the message will be sent.\n",
+            "items": {
+              "$ref": "#/components/schemas/Destination"
+            }
+          },
+          "content": {
+            "type": "object",
+            "description": "The content of the message, including the actual text to be sent to the recipient.\n",
+            "properties": {
+              "text": {
+                "type": "string",
+                "description": "The message text to be sent. This field cannot be empty.\n"
+              }
+            }
+          }
+        }
+      },
+      "SMSMessageRouteResponse": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "A unique ID generated by SMS Interceptor for tracking the request."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "MESSAGE_RECEIVED"
+            ],
+            "description": "Indicates the processing status of the request."
+          }
+        },
+        "example": {
+          "requestId": 10,
+          "status": "MESSAGE_RECEIVED"
+        }
+      },
+      "FallbackDetails": {
+        "type": "object",
+        "properties": {
+          "mobileNo": {
+            "type": "string"
+          },
+          "smsMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "InfoBipSendEventRQ": {
+        "type": "object",
+        "properties": {
+          "properties": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "fallbackDetails": {
+            "$ref": "#/components/schemas/FallbackDetails"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The time when the error occurred."
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "description": "HTTP status code for the error."
+          },
+          "error": {
+            "type": "string",
+            "description": "Error type or description."
+          },
+          "message": {
+            "type": "string",
+            "description": "Detailed error message."
+          },
+          "path": {
+            "type": "string",
+            "description": "The API path where the error occurred."
+          }
+        },
+        "example": {
+          "timestamp": "2025-02-25T06:02:59.737+00:00",
+          "status": 400,
+          "error": "Bad Request",
+          "message": "Invalid request: missing 'to' field in request body.",
+          "path": "/sms-receiver/SMS/sms/2/text/advanced"
+        }
+      }
+    }
+  }
+}
