@@ -4,3 +4,5 @@ strQuery1 = "SELECT top 10 " + select_column + " FROM " + TableName + " with (no
 					
 					
 select top 10 ALERT_INDEX, Alert_name, Alert_code, Mobile_no, Alert_text, Alert_Status,wi_Name from NG_RLOS_SMSQUEUETABLE with (nolock) where ALERT_STATUS ='p';
+
+				mLogger.info("Complete ArrayList Values: " + ArrLstTableValues.toString());
