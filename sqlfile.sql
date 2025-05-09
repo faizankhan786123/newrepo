@@ -1,54 +1,56 @@
-strQuery1 = "SELECT top 10 " + select_column + " FROM " + TableName + " with (nolock) WHERE " + ColNames
-					+ " = '" + ReadCode + "'";
-					
-					
-					
-select top 10 ALERT_INDEX, Alert_name, Alert_code, Mobile_no, Alert_text, Alert_Status,wi_Name from NG_RLOS_SMSQUEUETABLE with (nolock) where ALERT_STATUS ='p';
-
-				mLogger.info("Complete ArrayList Values: " + ArrLstTableValues.toString());
-
-
-CREATE TABLE NG_INFOBIP_AUDIT_LOG (
-    WORKITEM_NO     VARCHAR(100),
-    INPUT_XML       TEXT,
-    OUTPUT_XML      TEXT,
-    RESPONSE_CODE   VARCHAR(50),
-    INSERTED_ON     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-UPDATE NG_INFOBIP_AUDIT_LOG
-SET RESPONSE_CODE = '500'
-WHERE WORKITEM_NO = 'W12345';
-
-CREATE SEQUENCE NG_INFOBIP_EVENTID_SEQ
-    START WITH 1
-    INCREMENT BY 1
-    NOCACHE
-    NOCYCLE;
-
-
-
-
 CREATE TABLE USR_0_INFOBIP_SMS_QUEUETABLE (
-    Infobip_EventID            NUMBER PRIMARY KEY,
+    Infobip_EventID            INT PRIMARY KEY,
     Processname                NVARCHAR(100),
     WI_NAME                    NVARCHAR(100),
     AlertID                    NVARCHAR(100),
     InsertedDateTime           NVARCHAR(50),
     CIF                        NVARCHAR(50),
-    Dynamic_Tags               NVARCHAR(400), -- $ or ~ separated
-    Dynamic_Values             NVARCHAR(400), -- ~#$~ separated
-    Trigger_Status             CHAR(1),        -- P, D, F
+    Dynamic_Tags               NVARCHAR(400),
+    Dynamic_Values             NVARCHAR(400),
+    Trigger_Status             CHAR(1),
     Infobip_Response_Code      NVARCHAR(50),
     Infobip_Response_Message   NVARCHAR(1000),
-    Infobip_No_Of_Retry        NUMBER
+    Infobip_No_Of_Retry        INT
 );
-
 
 CREATE TABLE NG_INFOBIP_JSON_LOGHISTORY (
-    infobip_eventID     NUMBER PRIMARY KEY,
-    Request_time        TIMESTAMP DEFAULT SYSTIMESTAMP,
-    Response_Time       TIMESTAMP,
-    Request_JSON        CLOB,
-    Response_JSON       CLOB
+    infobip_eventID     INT PRIMARY KEY,
+    Request_time        DATETIME DEFAULT GETDATE(),
+    Response_Time       DATETIME,
+    Request_JSON        NVARCHAR(MAX),
+    Response_JSON       NVARCHAR(MAX)
 );
+
+
+-- Insert data without specifying Infobip_EventID
+INSERT INTO USR_0_INFOBIP_SMS_QUEUETABLE (
+    Processname, WI_NAME, AlertID, InsertedDateTime, CIF,
+    Dynamic_Tags, Dynamic_Values, Trigger_Status
+) 
+VALUES (
+    'Process1', 'WI-001', 'ALERT1', '2025-05-09 10:00:00', 'CIF001',
+    '$Name$', '~#John#', 'P'
+);
+CREATE TRIGGER trg_infobip_sms_eventid
+ON USR_0_INFOBIP_SMS_QUEUETABLE
+INSTEAD OF INSERT
+AS
+BEGIN
+    DECLARE @NextEventID INT;
+
+    -- Get the next value from the sequence
+    SELECT @NextEventID = NEXT VALUE FOR NG_INFOBIP_EVENTID_SEQ;
+
+    -- Insert the data with the generated Infobip_EventID
+    INSERT INTO USR_0_INFOBIP_SMS_QUEUETABLE (
+        Infobip_EventID, Processname, WI_NAME, AlertID, 
+        InsertedDateTime, CIF, Dynamic_Tags, Dynamic_Values, 
+        Trigger_Status, Infobip_Response_Code, Infobip_Response_Message, Infobip_No_Of_Retry
+    )
+    SELECT 
+        @NextEventID, Processname, WI_NAME, AlertID, 
+        InsertedDateTime, CIF, Dynamic_Tags, Dynamic_Values, 
+        Trigger_Status, Infobip_Response_Code, Infobip_Response_Message, Infobip_No_Of_Retry
+    FROM inserted;
+END;
+
