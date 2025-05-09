@@ -54,3 +54,8 @@ BEGIN
     FROM inserted;
 END;
 
+
+DROP TABLE USR_0_INFOBIP_SMS_QUEUETABLE;
+DROP TRIGGER trg_infobip_sms_eventid;
+
+
