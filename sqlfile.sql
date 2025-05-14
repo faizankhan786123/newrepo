@@ -66,4 +66,17 @@ CREATE TABLE USR_0_INFOBIP_SMS_HISTORY (
     RESPONSE_JSON NVARCHAR(MAX) NOT NULL
 );
 
+Infobip_EventID
+Processname
+WI_NAME
+AlertID
+InsertedDateTime
+CIF
+Dynamic_Tags
+Dynamic_Values
+Trigger_Status
+Infobip_Response_Code
+Infobip_Response_Message
+Infobip_No_Of_Retry
+
 
