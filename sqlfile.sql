@@ -80,3 +80,6 @@ Infobip_Response_Message
 Infobip_No_Of_Retry
 
 
+select Mobile_No,Alert_Text,Infobip_EventID,Infobip_No_of_Retry from NG_RLOS_SMSQUEUETABLE where isViaInfobip='Y'
+ 
+
