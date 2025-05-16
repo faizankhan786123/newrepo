@@ -81,5 +81,18 @@ Infobip_No_Of_Retry
 
 
 select top 10  Mobile_No,Alert_Text,Infobip_EventID,Infobip_No_of_Retry from NG_RLOS_SMSQUEUETABLE where isViaInfobip='Y'
-  
+
+{
+  "messages":[
+     {
+        "from":"RAKBANK",
+        "destinations":[
+           {
+              "to":"971500151265"
+           }
+        ],
+        "text":"You have inserted an invalid or blocked card, and hence, the card has been retained at AIRTEL on 04/25. Call 483-245 for assistance"
+     }
+  ]
+}
 
