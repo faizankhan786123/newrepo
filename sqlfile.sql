@@ -80,19 +80,16 @@ Infobip_Response_Message
 Infobip_No_Of_Retry
 
 
-select top 10  Mobile_No,Alert_Text,Infobip_EventID,Infobip_No_of_Retry from NG_RLOS_SMSQUEUETABLE where isViaInfobip='Y'
+SELECT 
+    E.eMail,
+    CONCAT(E.Mobile_Country_Code, '', E.Mobile_Number) AS MobNo,
+    E.Retail_or_Corporate,
+    W.customer_name1,
+    (
+        SELECT SOLENAME 
+        FROM RB_BRANCH_MASTER WITH(NOLOCK) 
+        WHERE RIGHT(SOLEID, 3) = RIGHT(W.Initiating_SOL_ID, 3)
+    ) AS BRANCH,
+    E.H_CIF_ID
 
-{
-  "messages":[
-     {
-        "from":"RAKBANK",
-        "destinations":[
-           {
-              "to":"971500151265"
-           }
-        ],
-        "text":"You have inserted an invalid or blocked card, and hence, the card has been retained at AIRTEL on 04/25. Call 483-245 for assistance"
-     }
-  ]
-}
 
