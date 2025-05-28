@@ -87,9 +87,16 @@ SELECT
     W.customer_name1,
     (
         SELECT SOLENAME 
-        FROM RB_BRANCH_MASTER WITH(NOLOCK) 
+        FROM RB_BRANCH_MASTER WITH (NOLOCK)
         WHERE RIGHT(SOLEID, 3) = RIGHT(W.Initiating_SOL_ID, 3)
     ) AS BRANCH,
     E.H_CIF_ID
+FROM 
+    RB_AO_EXTTABLE AS E WITH (NOLOCK)
+JOIN 
+    AO_TXN_TABLE AS W WITH (NOLOCK)
+    ON E.WI_NAME = W.Workitem_Number
+WHERE 
+    E.WI_NAME = 'ABC123';  
 
 
