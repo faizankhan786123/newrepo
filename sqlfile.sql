@@ -8,3 +8,14 @@ cARD_CODE~wI_NAME
 
 
 
+// faizan khan infobip project
+
+				CIF_ID = arr1.get(13);
+				infobip_Alert_id = arr1.get(14);
+				infobip_dynamic_tags = arr1.get(15);
+
+				// faizan khan infobip project
+
+	String dynamic_tags[] = infobip_dynamic_tags.split("~");
+			
+			Map<String, String> newMap = new HashMap<>();
