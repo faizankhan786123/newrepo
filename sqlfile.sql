@@ -108,3 +108,14 @@ try {
 } catch (Exception e) {
 	TS.mLogger.error("Error generating dynamic tag values", e);
 }
+
+
+private String getTagByValue(Map<String, String> map, String value) {
+	for (Map.Entry<String, String> entry : map.entrySet()) {
+		if (entry.getValue().equals(value)) {
+			return entry.getKey();
+		}
+	}
+	return null;
+}
+
