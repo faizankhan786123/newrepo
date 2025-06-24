@@ -228,7 +228,8 @@ try {
 
 --------------------------------------------------------------------
 
-SMSquery = "Insert into NG_RLOS_SMSQUEUETABLE ( Processname,WI_NAME,AlertID,InsertedDateTime,CIF,Dynamic_Tags,Dynamic_Values,Alert_Status) values ('TS','"
-							+ getWorkitemName(iformObj) + "'," + infobip_Alert_id
-							+ "',format(getdate(),'yyyy-MM-dd HH:mm:ss.fff'),'" + CIF_ID + "' ,'" + infobip_dynamic_tags
-							+ "','" + DynamicValues + "','P'";
+String SMSquery = "INSERT INTO NG_RLOS_SMSQUEUETABLE " +
+        "(Processname, WI_NAME, AlertID, InsertedDateTime, CIF, Dynamic_Tags, Dynamic_Values, Alert_Status) " +
+        "VALUES ('TS', '" + getWorkitemName(iformObj) + "', '" + infobip_Alert_id + "', " +
+        "FORMAT(GETDATE(), 'yyyy-MM-dd HH:mm:ss.fff'), '" + CIF_ID + "', '" +
+        infobip_dynamic_tags + "', '" + DynamicValues + "', 'P')";
