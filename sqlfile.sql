@@ -1,26 +1,5 @@
-card_No~wI_No~sLA_TAT
-card_No~wI_No
-card_No~wI_No
-card_No~wI_No~dDMMYYYY
-card_No~wI_No
-card_No~wI_No~cancellationReason
-card_No~wI_No~sub_Process_Name~sLA_TAT
-card_No~wI_No~sub_Process_Name
-card_No~wI_No~sub_Process_Name
-card_No~wI_No~sub_Process_Name
-card_No~wI_No
-card_No~wI_No~amount
-card_No~wI_No~dDMMYYYY
-card_No~wI_No~sub_Process_Name~sLA_TAT
-card_No~wI_No~sub_Process_Name~sLA_TAT
-card_No~wI_No~sub_Process_Name
-card_No~wI_No~sub_Process_Name
-card_No~wI_No~sub_Process_Name~dDMMYYYY
-card_No~wI_No~sub_Process_Name
-card_No~wI_No~sub_Process_Name
-card_No~wI_No~sub_Process_Name
-card_No~wI_No~sub_Process_Name~dDMMYYYY
-card_No~wI_No~sub_Process_Name
-card_No~wI_No~sub_Process_Name
-card_No~wI_No~sub_Process_Name~dDMMYYYY
-card_No~wI_No~sub_Process_Name
+select CIF from RB_DSR_ODC_EXTTABLE
+
+
+
+			String Query = "Select * From USR_0_CSR_BT_TemplateMapping where ProcessName = 'DSR_ODC' and TemplateType = '"
