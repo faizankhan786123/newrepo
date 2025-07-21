@@ -1,102 +1,96 @@
-	public static String sendSMS(IFormReference iform, String stage, String data) {
-		try {
-			CSR_BT.mLogger.debug("inside sendSMScall txtMessagessss");
-			CSR_BT.mLogger.debug("data----->" + data);
-			String[] param = data.split("-");
+public static String sendSMS(IFormReference iform, String stage, String data) {
+	try {
+		CSR_OCC.mLogger.debug("inside sendSMScall txtMessagessss");
+		CSR_OCC.mLogger.debug("data----->" + data);
+		String[] param = data.split("-");
 
-			// declare all variables
-			String WI_No = (String) iform.getValue("wi_name");
-			CSR_BT.mLogger.debug("WI_No------->" + WI_No);
-			String split_WI_No = splitString(WI_No);
-			CSR_BT.mLogger.debug("split_WI_No----------->" + split_WI_No);
+		// Declare all variables
+		String WI_No = (String) iform.getValue("wi_name");
+		CSR_OCC.mLogger.debug("WI_No------->" + WI_No);
+		String split_WI_No = splitString(WI_No);
+		CSR_OCC.mLogger.debug("split_WI_No----------->" + split_WI_No);
 
-			String Card_No = param[0];
-			CSR_BT.mLogger.debug("Card_No------->" + Card_No);
-			String lastDigitCard_No = Card_No.substring(12, 16);
-			CSR_BT.mLogger.debug("lastDigitCard_No------->" + lastDigitCard_No);
+		String Card_No = param[0];
+		CSR_OCC.mLogger.debug("Card_No------->" + Card_No);
+		String lastDigitCard_No = Card_No.substring(12, 16);
+		CSR_OCC.mLogger.debug("lastDigitCard_No------->" + lastDigitCard_No);
 
-			String Amount = (String) iform.getValue("BTD_RBC_BTA1");
-			CSR_BT.mLogger.debug("Amount------->" + Amount);
+		String pendingReason = (String) iform.getValue("Pending_Reason");
+		CSR_OCC.mLogger.debug("pendingReason------->" + pendingReason);
 
-			String date = getDate();
-			String smsLang = "EN";
+		String subProcessName = (String) iform.getValue("request_type");
+		CSR_OCC.mLogger.debug("subProcessName----------->" + subProcessName);
 
-			// Infobip variables
-			String AlertID = "";
-			String DynamicTags = "";
-			String infobipIsActive = "";
-			String CIF = "";
+		String SupplAmount = (String) iform.getValue("oth_ssc_Amount_Text");
+		CSR_OCC.mLogger.debug("SupplAmount----------->" + SupplAmount);
 
-			// Get CIF from external table
+		String date = getDate();
+		String smsLang = "EN";
 
-			String QueryExTable = "SELECT CIF FROM RB_CSR_BT_EXTTABLE WHERE wi_name = '" + WI_No + "'";
-			CSR_BT.mLogger.debug("CIF DB Query :" + QueryExTable);
-			List<List<String>> QueryExTableList = iform.getDataFromDB(QueryExTable);
-			if (QueryExTableList.size() > 0) {
-				CIF = QueryExTableList.get(0).get(0);
-			}
-			CSR_BT.mLogger.debug("Data from DB CIF :" + CIF);
+		// Infobip variables
+		String AlertID = "";
+		String DynamicTags = "";
+		String infobipIsActive = "";
+		String CIF = "";
 
-			String Query = "Select * From USR_0_CSR_BT_TemplateMapping where ProcessName = 'CSR_BT' and TemplateType = '"
-					+ stage + "'";
-			List<List<String>> Query_data = iform.getDataFromDB(Query);
-			CSR_BT.mLogger.debug("Query_data------->" + Query_data);
+		// Get CIF from external table
+		String QueryExTable = "SELECT CIF FROM RB_CSR_OCC_EXTTABLE WHERE wi_name = '" + WI_No + "'";
+		CSR_OCC.mLogger.debug("CIF DB Query :" + QueryExTable);
+		List<List<String>> QueryExTableList = iform.getDataFromDB(QueryExTable);
+		if (QueryExTableList.size() > 0) {
+			CIF = QueryExTableList.get(0).get(0);
+		}
+		CSR_OCC.mLogger.debug("Data from DB CIF :" + CIF);
 
-			if (Query_data.size() > 0) {
-				String txtMessage = Query_data.get(0).get(5);
-				infobipIsActive = Query_data.get(0).get(10);
-				AlertID = Query_data.get(0).get(8);
-				DynamicTags = Query_data.get(0).get(9);
+		String Query = "SELECT * FROM USR_0_CSR_BT_TemplateMapping WHERE ProcessName = 'CSR_OCC' AND TemplateType = '" + stage + "' AND SubProcess = '" + subProcessName + "'";
+		List<List<String>> Query_data = iform.getDataFromDB(Query);
+		CSR_OCC.mLogger.debug("Query_data------->" + Query_data);
 
-				CSR_BT.mLogger.debug("infobip is Active " + infobipIsActive);
-				CSR_BT.mLogger.debug("infobip Alert ID" + AlertID);
-				CSR_BT.mLogger.debug("infobip Dynamic Tags" + DynamicTags);
+		if (Query_data.size() > 0) {
+			String txtMessage = Query_data.get(0).get(5);
+			infobipIsActive = Query_data.get(0).get(10);
+			AlertID = Query_data.get(0).get(8);
+			DynamicTags = Query_data.get(0).get(9);
 
-				if (!txtMessage.equalsIgnoreCase("NULL") && infobipIsActive.equalsIgnoreCase("N")) {
-					CSR_BT.mLogger.debug("txtMessage before replace" + txtMessage);
-					txtMessage = txtMessage.replaceAll("#WI_No#", split_WI_No);
-					txtMessage = txtMessage.replaceAll("#Amount#", Amount);
-					txtMessage = txtMessage.replaceAll("#Card_No#", lastDigitCard_No);
-					txtMessage = txtMessage.replaceAll("#DD/MM/YYYY#", date);
-					if (stage.equalsIgnoreCase("PendingCancel")) {
-						String pendingReason = (String) iform.getValue("Pending_Reason");
-						CSR_BT.mLogger.debug("pendingReason------->" + pendingReason);
-						txtMessage = txtMessage.replaceAll("#CancellationReason#", pendingReason);
-					}
-					CSR_BT.mLogger.debug("txtMessage after replace" + txtMessage);
+			CSR_OCC.mLogger.debug("infobip is Active " + infobipIsActive);
+			CSR_OCC.mLogger.debug("infobip Alert ID " + AlertID);
+			CSR_OCC.mLogger.debug("infobip Dynamic Tags " + DynamicTags);
 
-					String tableName = "NG_RLOS_SMSQUEUETABLE";
-					String ALERT_Name = stage;
-					String Alert_Code = "CSR_BT";
-					String Alert_Status = "P";
-					String Mobile_No = param[1];
-					CSR_BT.mLogger.debug("Mobile no--------->" + Mobile_No);
-					String Workstep_Name = (String) iform.getActivityName();
-					String columnName = "(ALERT_Name, Alert_Code, Alert_Status, Mobile_No, Alert_Text, WI_Name, Workstep_Name, Inserted_Date_time)";
-					String values = "('" + ALERT_Name + "','" + Alert_Code + "','" + Alert_Status + "','" + Mobile_No
-							+ "','" + txtMessage + "','" + WI_No + "','" + Workstep_Name + "', getdate() )";
-					String SMSInsertQuery = "Insert into " + tableName + " " + columnName + " values " + values;
-					CSR_BT.mLogger.debug("Query to be inserted in table-----------------: " + SMSInsertQuery);
-					int status = iform.saveDataInDB(SMSInsertQuery);
-					CSR_BT.mLogger
-							.debug("SMS Triggered successfully if value of status is 1-------------STATUS = " + status);
-					if (status == 1)
-						return "true";
-				} else if (infobipIsActive.equalsIgnoreCase("Y")) {
-					String DynamicValues = "";
-					String pendingReason = "";
-					String[] tags = DynamicTags.split("~");
-					CSR_BT.mLogger.debug("Dynamic Tag Arr: " + Arrays.toString(tags));
+			if (!txtMessage.equalsIgnoreCase("NULL") && infobipIsActive.equalsIgnoreCase("N")) {
+				CSR_OCC.mLogger.debug("txtMessage before replace" + txtMessage);
+				txtMessage = txtMessage.replaceAll("#WI_No#", split_WI_No);
+				txtMessage = txtMessage.replaceAll("#Card_No#", lastDigitCard_No);
+				txtMessage = txtMessage.replaceAll("#CancellationReason#", pendingReason);
+				txtMessage = txtMessage.replaceAll("#DD/5MM/YYYY#", date);
+				txtMessage = txtMessage.replaceAll("#Sub_Process_Name#", subProcessName);
+				txtMessage = txtMessage.replaceAll("#Amount#", SupplAmount);
+				CSR_OCC.mLogger.debug("txtMessage after replace" + txtMessage);
 
-					if (stage.equalsIgnoreCase("PendingCancel")) {
-						pendingReason = (String) iform.getValue("Pending_Reason");
-						CSR_BT.mLogger.debug("pendingReason------->" + pendingReason);
-					}
+				String tableName = "NG_RLOS_SMSQUEUETABLE";
+				String ALERT_Name = stage;
+				String Alert_Code = "CSR_OCC";
+				String Alert_Status = "P";
+				String Mobile_No = param[1];
+				CSR_OCC.mLogger.debug("Mobile no--------->" + Mobile_No);
+				String Workstep_Name = (String) iform.getActivityName();
 
-					List<String> valueList = new ArrayList<String>();
-					for (String tag1 : tags) {
-						String pValue = "";
-						switch (tag1.trim()) {
+				String columnName = "(ALERT_Name, Alert_Code, Alert_Status, Mobile_No, Alert_Text, WI_Name, Workstep_Name, Inserted_Date_time)";
+				String values = "('" + ALERT_Name + "','" + Alert_Code + "','" + Alert_Status + "','" + Mobile_No + "','" + txtMessage + "','" + WI_No + "','" + Workstep_Name + "', getdate() )";
+				String SMSInsertQuery = "INSERT INTO " + tableName + " " + columnName + " VALUES " + values;
+
+				CSR_OCC.mLogger.debug("Query to be inserted in table-----------------: " + SMSInsertQuery);
+				int status = iform.saveDataInDB(SMSInsertQuery);
+				CSR_OCC.mLogger.debug("SMS Triggered successfully if value of status is 1-------------STATUS = " + status);
+				if (status == 1) return "true";
+			} else if (infobipIsActive.equalsIgnoreCase("Y")) {
+				String DynamicValues = "";
+				String[] tags = DynamicTags.split("~");
+				CSR_OCC.mLogger.debug("Dynamic Tag Arr: " + Arrays.toString(tags));
+
+				List<String> valueList = new ArrayList<>();
+				for (String tag1 : tags) {
+					String pValue = "";
+					switch (tag1.trim()) {
 						case "card_No":
 							pValue = lastDigitCard_No;
 							break;
@@ -107,40 +101,39 @@
 							pValue = date;
 							break;
 						case "amount":
-							pValue = Amount;
+							pValue = SupplAmount;
 							break;
 						case "cancellationReason":
 							pValue = pendingReason;
 							break;
-						}
-						valueList.add(pValue);
 					}
-					DynamicValues = String.join("~#~", valueList);
-					CSR_BT.mLogger.debug("Final List of Dynamic Values: " + valueList);
-
-					String tableName = "USR_0_INFOBIP_SMS_QUEUETABLE";
-					String ALERT_Name = stage;
-					String ProcessName = "CSR_BT";
-					String Alert_Status = "P";
-					String Mobile_No = param[1];
-					CSR_BT.mLogger.debug("Mobile no--------->" + Mobile_No);
-					String Workstep_Name = (String) iform.getActivityName();
-					String columnName = "(Processname,WI_NAME,AlertID,InsertedDateTime,CIF,Dynamic_Tags,Dynamic_Values,Alert_Status)";
-					String values = "('" + ProcessName + "','" + WI_No + "','" + AlertID
-							+ "',format(getdate(),'yyyy-MM-dd HH:mm:ss.fff'),'" + CIF + "','" + DynamicTags + "','"
-							+ DynamicValues + "','" + Alert_Status + "')";
-					String SMSInsertQuery = "Insert into " + tableName + " " + columnName + " values " + values;
-					CSR_BT.mLogger.debug("Query to be inserted in table-----------------: " + SMSInsertQuery);
-					int status = iform.saveDataInDB(SMSInsertQuery);
-					CSR_BT.mLogger
-							.debug("SMS Triggered successfully if value of status is 1-------------STATUS = " + status);
-					if (status == 1)
-						return "true";
+					valueList.add(pValue);
 				}
+
+				DynamicValues = String.join("~#~", valueList);
+				CSR_OCC.mLogger.debug("Final List of Dynamic Values: " + valueList);
+
+				String tableName = "USR_0_INFOBIP_SMS_QUEUETABLE";
+				String ALERT_Name = stage;
+				String ProcessName = "CSR_OCC";
+				String Alert_Status = "P";
+				String Mobile_No = param[1];
+				CSR_OCC.mLogger.debug("Mobile no--------->" + Mobile_No);
+				String Workstep_Name = (String) iform.getActivityName();
+
+				String columnName = "(Processname,WI_NAME,AlertID,InsertedDateTime,CIF,Dynamic_Tags,Dynamic_Values,Alert_Status)";
+				String values = "('" + ProcessName + "','" + WI_No + "','" + AlertID + "',format(getdate(),'yyyy-MM-dd HH:mm:ss.fff'),'" + CIF + "','" + DynamicTags + "','" + DynamicValues + "','" + Alert_Status + "')";
+				String SMSInsertQuery = "INSERT INTO " + tableName + " " + columnName + " VALUES " + values;
+
+				CSR_OCC.mLogger.debug("Query to be inserted in table-----------------: " + SMSInsertQuery);
+				int status = iform.saveDataInDB(SMSInsertQuery);
+				CSR_OCC.mLogger.debug("SMS Triggered successfully if value of status is 1-------------STATUS = " + status);
+				if (status == 1) return "true";
 			}
-		} catch (Exception ex) {
-			CSR_BT.mLogger.debug("Some error in sendSMScall" + ex.toString());
-			return "false";
 		}
+	} catch (Exception ex) {
+		CSR_OCC.mLogger.debug("Some error in sendSMScall" + ex.toString());
 		return "false";
 	}
+	return "false";
+}
