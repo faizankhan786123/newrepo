@@ -135,4 +135,7 @@ public static String sendSMS(IFormReference iform, String stage, String data) {
 		return "false";
 	}
 	return "false";
+
+ALTER TABLE table_name
+ADD column_name datatype;
 }
