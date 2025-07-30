@@ -37,6 +37,9 @@ BEGIN
 	DECLARE @Infobip_SMS_isActive nvarchar(200) = '';
 	DECLARE @infobip_Alert_id nvarchar(200) = '';
 	DECLARE @CIF_ID nvarchar(200) = '';
+	DECLARE @Infobip_Dynamic_Tags nvarchar(200) = '';
+	DECLARE @DynamicValues nvarchar(200) = '';
+	
 	
 	
 	SELECT @ProcessDefID=ProcessDefId FROM PROCESSDEFTABLE WITH(NOLOCK) WHERE ProcessName = 'TS'
@@ -80,7 +83,7 @@ BEGIN
 			
 			print 'ProcessInstanceID'+@WINAME+@MOB_NO
 			Select @MAIL_FROM = FROM_MAILID,@MAIL_SUBJECT = MAIL_SUBJECT,@MAIL_TEMPLATE = REPLACE((REPLACE(MAIL_TEMPLATE,'$WI_NAME$',''+@WINAME+'')),'$UPDATE_DATE$',@entryDATETIME+5),@SMS_TEMPLATE = REPLACE(SMS_TEMPLATE,'$WI_NAME$',''+@WINAME+''),@MAIL_PLACEHOLDER = MAIL_PLACEHOLDER,
-			@Infobip_SMS_isActive = Infobip_SMS_isActive,@infobip_Alert_id = Infobip_Alert_ID from NG_TS_TEMPLATE_MAPPING_MASTER WITH(NOLOCK) where SERVICE_NAME = 'Card Dispute' and TEMPLATE_ID = '39' and ISACTIVE = 'Y'
+			@Infobip_SMS_isActive = Infobip_SMS_isActive,@infobip_Alert_id = Infobip_Alert_ID,@Infobip_Dynamic_Tags = Infobip_Dynamic_Tags from NG_TS_TEMPLATE_MAPPING_MASTER WITH(NOLOCK) where SERVICE_NAME = 'Card Dispute' and TEMPLATE_ID = '39' and ISACTIVE = 'Y'
 			
 			
 			
@@ -88,6 +91,10 @@ BEGIN
                      SELECT @CIF_ID = CIF 
                      FROM NG_TS_EXTTABLE WITH(NOLOCK) 
                      WHERE WI_NAME = @WINAME;
+					 
+					 
+					 
+					 @DynamicValues = @WINAME;
 			
 			
 			
@@ -122,7 +129,7 @@ BEGIN
                   ELSE IF (@Infobip_SMS_isActive = 'Y')
                  BEGIN
 	                   INSERT INTO USR_0_INFOBIP_SMS_QUEUETABLE(Processname, WI_NAME, AlertID, InsertedDateTime, CIF, Dynamic_Tags, Dynamic_Values, Alert_Status)
-	                    VALUES('TS', @WINAME, @infobip_Alert_id, FORMAT(GETDATE(), 'yyyy-MM-dd HH:mm:ss.fff'), @CIF_ID , 'infobip_dynamic_tags', 'DynamicValues', 'P')
+	                    VALUES('TS', @WINAME, @infobip_Alert_id, FORMAT(GETDATE(), 'yyyy-MM-dd HH:mm:ss.fff'), @CIF_ID , @Infobip_Dynamic_Tags, 'DynamicValues', 'P')
                         END
 
 				END
