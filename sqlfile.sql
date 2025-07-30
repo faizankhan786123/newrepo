@@ -112,3 +112,9 @@ BEGIN TRY
 END
 --exec NG_TS_MAIL_PROC 'TS-0000000593-Process', 'Document_Attach_Hold'
 
+
+"INSERT INTO NG_RLOS_SMSQUEUETABLE "
+							+ "(Alert_Name, Alert_Code, ALert_Status, Mobile_No, Alert_Text, WI_Name, Workstep_Name, inserted_Date_time) "
+							+ "VALUES ('TS SMS', 'TS', 'P', '" + SMS_MOBNO + "', '" + sms_template + "', '"
+							+ getWorkitemName(iformObj) + "', '" + iformObj.getActivityName() + "', GETDATE())";
+
