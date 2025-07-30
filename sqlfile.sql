@@ -103,10 +103,18 @@ BEGIN
 				IF(@MOB_NO <> '' AND @MOB_NO is not null AND @SMS_TEMPLATE <> '' AND @SMS_TEMPLATE is not null)
 				begin
 					if(dbo.CPMSDateDiffExcludingWeekends(@entryDATETIME,GETDATE())=2 OR dbo.CPMSDateDiffExcludingWeekends(@entryDATETIME,GETDATE())=1)
-					begin
-						print 'SMS'
-						INSERT INTO NG_RLOS_SMSQUEUETABLE(Alert_Name,Alert_Code,ALert_Status,Mobile_No,Alert_Text,WI_NAME,Workstep_Name,inserted_Date_time) values('TS_Testing','TS Subject Testing','P',''+@MOB_NO+'',''+@SMS_TEMPLATE+'',''+@WINAME+'','Document_Attach_Hold',GETDATE())	
-					end
+					print 'SMS'
+                  IF (@Infobip_SMS_isActive = 'N')
+                  BEGIN
+	                  INSERT INTO NG_RLOS_SMSQUEUETABLE(Alert_Name, Alert_Code, ALert_Status, Mobile_No, Alert_Text, WI_NAME, Workstep_Name, inserted_Date_time)
+	                   VALUES('TS_Testing','TS Subject Testing','P',''+@MOB_NO+'',''+@SMS_TEMPLATE+'',''+@WINAME+'','Document_Attach_Hold',GETDATE())
+                           END
+                  ELSE IF (@Infobip_SMS_isActive = 'Y')
+                 BEGIN
+	                   INSERT INTO USR_0_INFOBIP_SMS_QUEUETABLE(Processname, WI_NAME, AlertID, InsertedDateTime, CIF, Dynamic_Tags, Dynamic_Values, Alert_Status)
+	                    VALUES('TS', @WINAME, 'infobip_Alert_id', FORMAT(GETDATE(), 'yyyy-MM-dd HH:mm:ss.fff'), 'CIF_ID', 'infobip_dynamic_tags', 'DynamicValues', 'P')
+                        END
+
 				END
 		FETCH NEXT FROM rem_cursor INTO @processinstanceid 
 	END 
