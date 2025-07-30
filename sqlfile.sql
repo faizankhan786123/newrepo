@@ -1,140 +1,114 @@
-public static String sendSMS(IFormReference iform, String stage, String data) {
-		try {
-			CSR_OCC.mLogger.debug("inside sendSMScall txtMessagessss");
-			CSR_OCC.mLogger.debug("data----->" + data);
-			String[] param = data.split("-");
+USE [rakcas]
+GO
+/****** Object:  StoredProcedure [dbo].[NG_TS_MAIL_PROC]    Script Date: 7/30/2025 1:56:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 
-			// Declare all variables
-			String WI_No = (String) iform.getValue("wi_name");
-			CSR_OCC.mLogger.debug("WI_No------->" + WI_No);
-			String split_WI_No = splitString(WI_No);
-			CSR_OCC.mLogger.debug("split_WI_No----------->" + split_WI_No);
 
-			String Card_No = param[0];
-			CSR_OCC.mLogger.debug("Card_No------->" + Card_No);
-			String lastDigitCard_No = Card_No.substring(12, 16);
-			CSR_OCC.mLogger.debug("lastDigitCard_No------->" + lastDigitCard_No);
 
-			String pendingReason = (String) iform.getValue("Pending_Reason");
-			CSR_OCC.mLogger.debug("pendingReason------->" + pendingReason);
+ALTER PROCEDURE [dbo].[NG_TS_MAIL_PROC]
+@sProcessinstanceid varchar(63),
+@tmpParam nvarchar(500)
+As
+BEGIN
 
-			String subProcessName = (String) iform.getValue("request_type");
-			CSR_OCC.mLogger.debug("subProcessName----------->" + subProcessName);
+SET NOCOUNT  on
 
-			String SupplAmount = (String) iform.getValue("oth_ssc_Amount_Text");
-			CSR_OCC.mLogger.debug("SupplAmount----------->" + SupplAmount);
+SET XACT_ABORT ON
 
-			String date = getDate();
-			String smsLang = "EN";
+BEGIN TRY
 
-			// Infobip variables
-			String AlertID = "";
-			String DynamicTags = "";
-			String infobipIsActive = "";
-			String CIF = "";
+	SET NOCOUNT ON;
+	DECLARE @RetValue nvarchar(512) = ''
+	Declare @CabName nvarchar(50);
+	DECLARE @ProcessDefID INT = 0;
+	DECLARE @ActivityID INT = 0;
+	DECLARE @WorkItemID INT = 0;
+	DECLARE @WINAME NVARCHAR(100) = '';
+	DECLARE @MOB_NO nvarchar(20)= '';
+	DECLARE @MAIL_TEMPLATE nvarchar(max)= '';
+	DECLARE @SMS_TEMPLATE nvarchar(1000)= '';
+	DECLARE @Infobip_SMS_isActive NVARCHAR(200)='';
+	DECLARE @MAIL_PLACEHOLDER nvarchar(200)= '';
+	DECLARE @MAIL_TO NVARCHAR(255) = ''
+	DECLARE @MAIL_FROM NVARCHAR(255) = ''
+	DECLARE @MAIL_SUBJECT NVARCHAR(255) = ''
+	DECLARE @Constant_Name nvarchar(200) = ''
+	DECLARE @Constant_Value nvarchar(200) = ''
+	declare @activityname NVARCHAR(200)=''
+	declare @entryDATETIME datetime
+	
+	
+	SELECT @ProcessDefID=ProcessDefId FROM PROCESSDEFTABLE WITH(NOLOCK) WHERE ProcessName = 'TS'
+	
+	DECLARE doc_cursor1 CURSOR FOR
+	SELECT ConstantName, ConstantValue FROM CONSTANTDEFTABLE with(nolock) WHERE ProcessDefId = @ProcessDefID
 
-			// Get CIF from external table
-			String QueryExTable = "SELECT CIF FROM RB_CSR_OCC_EXTTABLE WHERE wi_name = '" + WI_No + "'";
-			CSR_OCC.mLogger.debug("CIF DB Query :" + QueryExTable);
-			List<List<String>> QueryExTableList = iform.getDataFromDB(QueryExTable);
-			if (QueryExTableList.size() > 0) {
-				CIF = QueryExTableList.get(0).get(0);
-			}
-			CSR_OCC.mLogger.debug("Data from DB CIF :" + CIF);
+	OPEN doc_cursor1  
+	FETCH NEXT FROM doc_cursor1 INTO @Constant_Name,@Constant_Value
+	WHILE @@FETCH_STATUS = 0  
+	BEGIN			
+		if(@Constant_Name = 'CONST_CabinetName')
+		BEGIN
+			set @CabName = @Constant_Value
+			print 'CabName'+@CabName
+		END
+		
+	   FETCH NEXT FROM doc_cursor1 INTO @Constant_Name,@Constant_Value
+	END 
+		
+	CLOSE doc_cursor1  
+	DEALLOCATE doc_cursor1
 
-			String Query = "SELECT * FROM USR_0_CSR_BT_TemplateMapping WHERE ProcessName = 'CSR_OCC' AND TemplateType = '" + stage + "' AND SubProcess = '" + subProcessName + "'";
-			List<List<String>> Query_data = iform.getDataFromDB(Query);
-			CSR_OCC.mLogger.debug("Query_data------->" + Query_data);
+	------------------------
+	if @tmpParam = 'Document_Attach_Hold'
+	BEGIN  
+      print 'ProcessInstanceID'+@sProcessinstanceid
+			
+			SELECT @WorkItemID=WorkItemId, @ActivityID=ActivityId FROM WFINSTRUMENTTABLE WITH(NOLOCK) WHERE ProcessInstanceID=@sProcessinstanceid 
+			
+			Select @WINAME=WI_NAME ,@entryDATETIME = ENTRYAT, @MAIL_TO = EMAIL_ID,@MOB_NO = MOBILE_NO  from NG_TS_EXTTABLE WITH(NOLOCK) WHERE WI_NAME=@sProcessinstanceid
+			
+			print 'ProcessInstanceID'+@WINAME+@MOB_NO
+			Select @MAIL_FROM = FROM_MAILID,@MAIL_SUBJECT = MAIL_SUBJECT,@MAIL_TEMPLATE = REPLACE((REPLACE(MAIL_TEMPLATE,'$WI_NAME$',''+@WINAME+'')),'$UPDATE_DATE$',@entryDATETIME+5),@SMS_TEMPLATE = REPLACE(SMS_TEMPLATE,'$WI_NAME$',''+@WINAME+''),@MAIL_PLACEHOLDER = MAIL_PLACEHOLDER
+			,@Infobip_SMS_isActive = Infobip_SMS_isActive from NG_TS_TEMPLATE_MAPPING_MASTER WITH(NOLOCK) where SERVICE_NAME = 'Card Dispute' and TEMPLATE_ID = '40' and ISACTIVE = 'Y'
+			
+			
+			---@MAIL_TEMPLATE = REPLACE(MAIL_TEMPLATE,'$WI_NAME$',''+@WINAME+'')
+			--@MAIL_TEMPLATE = REPLACE(MAIL_TEMPLATE,'$UPDATE_DATE$',''+@entryDATETIME+'+5')
+			--@SMS_TEMPLATE = REPLACE(SMS_TEMPLATE,'$WI_NAME$',''+@WINAME+'')
+			
+			print 'MAil'+@MAIL_FROM
+				IF(@MAIL_TO <> '' AND @MAIL_TO is not null AND @MAIL_TEMPLATE <> '' AND @MAIL_TEMPLATE is not null)
+				begin
+					
+					set @MAIL_TO='test11@rakbanktst.ae' --used for testing
+					
+					INSERT INTO WFMAILQUEUETABLE(mailFrom,mailTo,mailCC,mailBCC,mailSubject,mailMessage,mailContentType,attachmentISINDEX,attachmentNames,attachmentExts,mailPriority,mailStatus,statusComments,lockedBy,successTime,LastLockTime,insertedBy,mailActionType,insertedTime,processDefId,processInstanceId,workitemId,activityId,noOfTrials,zipFlag,zipName,maxZipSize,alternateMessage) values(''+@MAIL_FROM+'',''+@MAIL_TO+'',NULL,NULL,''+@MAIL_SUBJECT+'',''+@MAIL_TEMPLATE+'','text/html;charset=UTF-8',NULL,NULL,NULL,1,'N',NULL,NULL,NULL,NULL,'CUSTOM','TRIGGER',getdate(),@ProcessDefID,@sProcessinstanceid,@WorkItemID,@ActivityID,0,NULL,NULL,NULL,NULL)	
+					
+				END
+				IF(@MOB_NO <> '' AND @MOB_NO is not null AND @SMS_TEMPLATE <> '' AND @SMS_TEMPLATE is not null)
+				begin
+					
+					print 'SMS'
+					INSERT INTO NG_RLOS_SMSQUEUETABLE(Alert_Name,Alert_Code,ALert_Status,Mobile_No,Alert_Text,WI_NAME,Workstep_Name,inserted_Date_time) values('TS_Testing','TS Subject Testing','P',''+@MOB_NO+'',''+@SMS_TEMPLATE+'',''+@WINAME+'','Discard-Document_Attach_Hold',GETDATE())	
+					
+				END
+		Set @RetValue='Success'
+	END 
 
-			if (Query_data.size() > 0) {
-				String txtMessage = Query_data.get(0).get(5);
-				infobipIsActive = Query_data.get(0).get(10);
-				AlertID = Query_data.get(0).get(8);
-				DynamicTags = Query_data.get(0).get(9);
-				
+	END	TRY
+	BEGIN CATCH
 
-				CSR_OCC.mLogger.debug("infobip is Active " + infobipIsActive);
-				CSR_OCC.mLogger.debug("infobip Alert ID " + AlertID);
-				CSR_OCC.mLogger.debug("infobip Dynamic Tags " + DynamicTags);
+		SELECT ERROR_MESSAGE()
 
-				if (!txtMessage.equalsIgnoreCase("NULL") && infobipIsActive.equalsIgnoreCase("N")) {
-					CSR_OCC.mLogger.debug("txtMessage before replace" + txtMessage);
-					txtMessage = txtMessage.replaceAll("#WI_No#", split_WI_No);
-					txtMessage = txtMessage.replaceAll("#Card_No#", lastDigitCard_No);
-					txtMessage = txtMessage.replaceAll("#CancellationReason#", pendingReason);
-					txtMessage = txtMessage.replaceAll("#DD/5MM/YYYY#", date);
-					txtMessage = txtMessage.replaceAll("#Sub_Process_Name#", subProcessName);
-					txtMessage = txtMessage.replaceAll("#Amount#", SupplAmount);
-					CSR_OCC.mLogger.debug("txtMessage after replace" + txtMessage);
+		IF @@TRANCOUNT>0
+			ROLLBACK
 
-					String tableName = "NG_RLOS_SMSQUEUETABLE";
-					String ALERT_Name = stage;
-					String Alert_Code = "CSR_OCC";
-					String Alert_Status = "P";
-					String Mobile_No = param[1];
-					CSR_OCC.mLogger.debug("Mobile no--------->" + Mobile_No);
-					String Workstep_Name = (String) iform.getActivityName();
+		 
+	END CATCH
+END
+--exec NG_TS_MAIL_PROC 'TS-0000000593-Process', 'Document_Attach_Hold'
 
-					String columnName = "(ALERT_Name, Alert_Code, Alert_Status, Mobile_No, Alert_Text, WI_Name, Workstep_Name, Inserted_Date_time)";
-					String values = "('" + ALERT_Name + "','" + Alert_Code + "','" + Alert_Status + "','" + Mobile_No + "','" + txtMessage + "','" + WI_No + "','" + Workstep_Name + "', getdate() )";
-					String SMSInsertQuery = "INSERT INTO " + tableName + " " + columnName + " VALUES " + values;
-
-					CSR_OCC.mLogger.debug("Query to be inserted in table-----------------: " + SMSInsertQuery);
-					int status = iform.saveDataInDB(SMSInsertQuery);
-					CSR_OCC.mLogger.debug("SMS Triggered successfully if value of status is 1-------------STATUS = " + status);
-					if (status == 1) return "true";
-				} else if (infobipIsActive.equalsIgnoreCase("Y")) {
-					String DynamicValues = "";
-					String[] tags = DynamicTags.split("~");
-					CSR_OCC.mLogger.debug("Dynamic Tag Arr: " + Arrays.toString(tags));
-
-					List<String> valueList = new ArrayList<>();
-					for (String tag1 : tags) {
-						String pValue = "";
-						switch (tag1.trim()) {
-							case "card_No":
-								pValue = lastDigitCard_No;
-								break;
-							case "wI_No":
-								pValue = split_WI_No;
-								break;
-							case "dDMMYYYY":
-								pValue = date;
-								break;
-							case "amount":
-								pValue = SupplAmount;
-								break;
-							case "cancellationReason":
-								pValue = pendingReason;
-								break;
-						}
-						valueList.add(pValue);
-					}
-
-					DynamicValues = String.join("~#~", valueList);
-					CSR_OCC.mLogger.debug("Final List of Dynamic Values: " + valueList);
-
-					String tableName = "USR_0_INFOBIP_SMS_QUEUETABLE";
-					String ALERT_Name = stage;
-					String ProcessName = "CSR_OCC";
-					String Alert_Status = "P";
-					String Mobile_No = param[1];
-					CSR_OCC.mLogger.debug("Mobile no--------->" + Mobile_No);
-					String Workstep_Name = (String) iform.getActivityName();
-
-					String columnName = "(Processname,WI_NAME,AlertID,InsertedDateTime,CIF,Dynamic_Tags,Dynamic_Values,Alert_Status)";
-					String values = "('" + ProcessName + "','" + WI_No + "','" + AlertID + "',format(getdate(),'yyyy-MM-dd HH:mm:ss.fff'),'" + CIF + "','" + DynamicTags + "','" + DynamicValues + "','" + Alert_Status + "')";
-					String SMSInsertQuery = "INSERT INTO " + tableName + " " + columnName + " VALUES " + values;
-
-					CSR_OCC.mLogger.debug("Query to be inserted in table-----------------: " + SMSInsertQuery);
-					int status = iform.saveDataInDB(SMSInsertQuery);
-					CSR_OCC.mLogger.debug("SMS Triggered successfully if value of status is 1-------------STATUS = " + status);
-					if (status == 1) return "true";
-				}
-			}
-		} catch (Exception ex) {
-			CSR_OCC.mLogger.debug("Some error in sendSMScall" + ex.toString());
-			return "false";
-		}
-		return "false";
-	}
