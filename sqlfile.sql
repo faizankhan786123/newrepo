@@ -1,6 +1,6 @@
 USE [rakcas]
 GO
-/****** Object:  StoredProcedure [dbo].[NG_TS_DOC_REMINDER_MAIL_PROC]    Script Date: 7/30/2025 2:20:07 PM ******/
+/****** Object:  StoredProcedure [dbo].[NG_TS_DOC_REMINDER_MAIL_PROC]    Script Date: 7/31/2025 8:52:03 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -88,13 +88,13 @@ BEGIN
 			
 			
                -- Fetch from NG_TS_EXTTABLE
-                     SELECT @CIF_ID = CIF 
+                     SELECT @CIF_ID = CIF_ID 
                      FROM NG_TS_EXTTABLE WITH(NOLOCK) 
                      WHERE WI_NAME = @WINAME;
 					 
 					 
 					 
-					 @DynamicValues = @WINAME;
+					 SET @DynamicValues = @WINAME;
 			
 			
 			
@@ -129,7 +129,8 @@ BEGIN
                   ELSE IF (@Infobip_SMS_isActive = 'Y')
                  BEGIN
 	                   INSERT INTO USR_0_INFOBIP_SMS_QUEUETABLE(Processname, WI_NAME, AlertID, InsertedDateTime, CIF, Dynamic_Tags, Dynamic_Values, Alert_Status)
-	                    VALUES('TS', @WINAME, @infobip_Alert_id, FORMAT(GETDATE(), 'yyyy-MM-dd HH:mm:ss.fff'), @CIF_ID , @Infobip_Dynamic_Tags, 'DynamicValues', 'P')
+	                    VALUES('TS', ''+@WINAME+'', ''+@infobip_Alert_id+'', FORMAT(GETDATE(), 'yyyy-MM-dd HH:mm:ss.fff'), ''+@CIF_ID+'', 
+						''+@Infobip_Dynamic_Tags+'', ''+@DynamicValues+'', 'P')
                         END
 
 				END
@@ -215,7 +216,16 @@ BEGIN
 					
 					begin
 						print 'SMS-25'
-						INSERT INTO NG_RLOS_SMSQUEUETABLE(Alert_Name,Alert_Code,ALert_Status,Mobile_No,Alert_Text,WI_NAME,Workstep_Name,inserted_Date_time) values('TS_Testing','TS Subject Testing','P',''+@MOB_NO+'',''+@SMS_TEMPLATE+'',''+@WINAME+'','Card Dispute',GETDATE())	
+						IF (@Infobip_SMS_isActive = 'N')
+                  BEGIN
+	                  INSERT INTO NG_RLOS_SMSQUEUETABLE(Alert_Name,Alert_Code,ALert_Status,Mobile_No,Alert_Text,WI_NAME,Workstep_Name,inserted_Date_time) values('TS_Testing','TS Subject Testing','P',''+@MOB_NO+'',''+@SMS_TEMPLATE+'',''+@WINAME+'','Card Dispute',GETDATE())	
+                           END
+                  ELSE IF (@Infobip_SMS_isActive = 'Y')
+                 BEGIN
+	                   INSERT INTO USR_0_INFOBIP_SMS_QUEUETABLE(Processname, WI_NAME, AlertID, InsertedDateTime, CIF, Dynamic_Tags, Dynamic_Values, Alert_Status)
+	                    VALUES('TS', ''+@WINAME+'', ''+@infobip_Alert_id+'', FORMAT(GETDATE(), 'yyyy-MM-dd HH:mm:ss.fff'), ''+@CIF_ID+'', 
+						''+@Infobip_Dynamic_Tags+'', ''+@DynamicValues+'', 'P')
+                        END
 					end
 				END
 		FETCH NEXT FROM rem_cursor1 INTO @WINAME 
