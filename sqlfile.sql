@@ -46,3 +46,5 @@ TS.mLogger.debug("Sub Process Name : " + Sub_Process_Name);
 					}
 				}
 			}
+
+NG_TS_TRANS_DISPUTE_GRID_DTLS
