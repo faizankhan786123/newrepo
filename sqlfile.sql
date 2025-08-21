@@ -1,3 +1,3 @@
-UPDATE table_name
-SET column1 = value1, column2 = value2, ...
-WHERE condition;
+ALTER TABLE YourTableName
+ADD MobileNumber VARCHAR(20),
+    SMS_Content NVARCHAR(MAX);
