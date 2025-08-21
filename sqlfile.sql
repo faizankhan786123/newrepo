@@ -1,3 +1,1 @@
-ALTER TABLE YourTableName
-ADD MobileNumber VARCHAR(20),
-    SMS_Content NVARCHAR(MAX);
+EXEC sp_rename 'YourTableName.sms', 'SMS_Content', 'COLUMN';
