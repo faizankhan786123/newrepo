@@ -1,7 +1,1 @@
-requestBody = "{\r\n" +
-            "\"properties\": {},\r\n" +
-            "\"fallbackDetails\": {\r\n" +
-            "   \"mobileNo\": \"" + Mobile_Number + "\",\r\n" +
-            "   \"smsMessage\": \"" + SMS_Content + "\"\r\n" +
-            "}\r\n" +
-            "}";
+{"fallbackDetails":{"smsMessage":"Your RAK Protect Cancellation with Reversal request TS-0000002780-Process on Card ending 3006 is received & will be processed in 3 working days. Call 04-2130000 if not initiated by you.","mobileNo":"971562003226"},"properties":{"cARD_CODE":"3006","sLA_TAT":"3","wI_NAME":"TS-0000002780-Process","sUB_PROCESS_NAME":"Cancellation with Reversal/Reversal"}}
