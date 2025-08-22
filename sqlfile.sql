@@ -1,1 +1,6 @@
 29-07-2025 06:51:54.863
+
+SELECT *
+FROM YourTable
+WHERE YourDateColumn >= CAST(GETDATE() AS DATE)
+  AND YourDateColumn < DATEADD(DAY, 1, CAST(GETDATE() AS DATE));
