@@ -1,5 +1,27 @@
-INSERT INTO USR_0_INFOBIP_SMS_QUEUETABLE "
-							+ "(Processname, WI_NAME, AlertID, InsertedDateTime, CIF, Dynamic_Tags, Dynamic_Values, Alert_Status) "
-							+ "VALUES ('TS', '" + getWorkitemName(iformObj) + "', '" + infobip_Alert_id + "', "
-							+ "FORMAT(GETDATE(), 'yyyy-MM-dd HH:mm:ss.fff'), '" + CIF_ID + "', '" + infobip_dynamic_tags
-							+ "', '" + DynamicValues + "', 'P')";
+for (Map<String, String> data : dataList) {
+    String Infobip_EventID = data.get("Infobip_EventID");
+    String AlertID = data.get("AlertID");
+    String CIF = data.get("CIF");
+    String Dynamic_Tags = data.get("Dynamic_Tags");
+    String Dynamic_Values = data.get("Dynamic_Values");
+    String Infobip_No_Of_Retry = data.get("Infobip_No_Of_Retry");
+    String Mobile_Number = data.get("MobileNumber");
+    String SMS_Content = data.get("SMS_Content");
+
+    // 🚨 If CIF is blank → call Non-CIF flow
+    if (CIF == null || CIF.trim().isEmpty()) {
+        logger.info("CIF is blank, using InfoBipNonCIFSMS for EventID: " + Infobip_EventID);
+
+        InfoBipNonCIFSMS nonCifObj = new InfoBipNonCIFSMS();
+        Thread nonCifThread = new Thread(nonCifObj);
+        nonCifThread.start(); // 🔹 Run Non-CIF logic in its own thread
+
+        continue; // skip CIF-based logic
+    }
+
+    // 🔹 Else process CIF flow
+    String dynamicURL = baseUrl + "/peopleevents/2/persons/" + CIF + "." + CIF + "/definitions/"
+                        + AlertID + "/events";
+
+    // ... your CIF JSON construction + API call logic ...
+}
