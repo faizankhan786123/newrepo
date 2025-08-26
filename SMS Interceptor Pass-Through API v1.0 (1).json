@@ -1,2 +1,34 @@
-Infobip_EventID	Processname	WI_NAME	AlertID	InsertedDateTime	CIF	Dynamic_Tags	Dynamic_Values	Alert_Status	Infobip_Response_Code	Infobip_Response_Message	Infobip_No_Of_Retry	MobileNumber	SMS_Content
-278	BAIS	BAIS-0000002878-Process	BPMPWB3	2025-06-03 08:03:06	3486454	TradeLicense	TL56562655	D	200	{"requestId":60644 "status":"MESSAGE_RECEIVED"}	1	NULL	NULL
+INSERT INTO Infobip_SMS_Log
+(
+    Infobip_EventID,
+    Processname,
+    WI_NAME,
+    AlertID,
+    InsertedDateTime,
+    CIF,
+    Dynamic_Tags,
+    Dynamic_Values,
+    Alert_Status,
+    Infobip_Response_Code,
+    Infobip_Response_Message,
+    Infobip_No_Of_Retry,
+    MobileNumber,
+    SMS_Content
+)
+VALUES
+(
+    278,
+    'BAIS',
+    'BAIS-0000002878-Process',
+    'BPMPWB3',
+    '2025-06-03 08:03:06',
+    3486454,
+    'TradeLicense',
+    'TL56562655',
+    'P',
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+);
