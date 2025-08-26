@@ -152,3 +152,9 @@ String strQuery1 = "select top 10 * from USR_0_INFOBIP_SMS_QUEUETABLE  with (NOL
 							// status = P, No of tries +1, response message
 						}
 					}
+
+
+public class InfoBipNonCIFSMS()
+{
+
+								}
