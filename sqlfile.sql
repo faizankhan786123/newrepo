@@ -31,7 +31,6 @@ public class InfoBipCIFSMS implements Runnable {
 	private String pass = SMSAutoService.password;
 	private String baseUrl = SMSAutoService.InfoBIP_ENDPOINTURL;
 	private String SessionId = SMSAutoService.sessionID;
-	// private static NGEjbClient ngEjbClientConnection;
 	private static final NGEjbClient ngEjbClientConnection = CentralRunner.getConnection();
 	private String URL = SMSAutoService.InfoBIP_ENDPOINTURL;
 
@@ -40,15 +39,8 @@ public class InfoBipCIFSMS implements Runnable {
 	CentralRunner crObj = new CentralRunner();
 	SMSAutoService smsobj = new SMSAutoService();
 	public static User userPass = new User();
-	/*
-	 * static { try { ngEjbClientConnection = NGEjbClient.getSharedInstance();
-	 * ngEjbClientConnection.initialize("10.15.12.164", "3333", "JTS"); } catch
-	 * (NGException e) { e.printStackTrace(); } }
-	 */
 
-	// public InfoBipCIFSMS() {
-	// manager.createLogFile();
-	// }
+	private static final int MAX_RETRY = 5; // 🔥 FIX: configurable retry limit
 
 	@Override
 	public void run() {
@@ -109,58 +101,31 @@ public class InfoBipCIFSMS implements Runnable {
 					String xmlParserData_val = xmlParserData.getNextValueOf("Record");
 					logger.info("employerDetails_totalRetreived : " + xmlParserData_val);
 					xmlParserData_val = xmlParserData_val.replaceAll("[ ]+>", ">").replaceAll("<[ ]+", "<");
-					// replace the spcl char above.
 					NGXmlList objWorkList = xmlParserData.createList("Records", "Record");
 
-					// Store the data to process later outside the loop
 					List<Map<String, String>> dataList = new ArrayList<>();
 
-					String CIF = "";
-
 					for (; objWorkList.hasMoreElements(true); objWorkList.skip(true)) {
-						String Infobip_EventID = objWorkList.getVal("Infobip_EventID");
-						String Processname = objWorkList.getVal("Processname");
-						String WI_NAME = objWorkList.getVal("WI_NAME");
-						String AlertID = objWorkList.getVal("AlertID");
-						CIF = objWorkList.getVal("CIF");
-						String Dynamic_Tags = objWorkList.getVal("Dynamic_Tags");
-						String Dynamic_Values = objWorkList.getVal("Dynamic_Values");
-						String Trigger_Status = objWorkList.getVal("Alert_Status");
-						String Infobip_No_Of_Retry = objWorkList.getVal("Infobip_No_Of_Retry");
-						String MobileNumber = objWorkList.getVal("MobileNumber");
-						String SMS_Content = objWorkList.getVal("SMS_Content");
+						Map<String, String> dataMap = new HashMap<>();
+						dataMap.put("Infobip_EventID", objWorkList.getVal("Infobip_EventID"));
+						dataMap.put("Processname", objWorkList.getVal("Processname"));
+						dataMap.put("WI_NAME", objWorkList.getVal("WI_NAME"));
+						dataMap.put("AlertID", objWorkList.getVal("AlertID"));
+						dataMap.put("CIF", objWorkList.getVal("CIF"));
+						dataMap.put("Dynamic_Tags", objWorkList.getVal("Dynamic_Tags"));
+						dataMap.put("Dynamic_Values", objWorkList.getVal("Dynamic_Values"));
+						dataMap.put("Alert_Status", objWorkList.getVal("Alert_Status"));
+						dataMap.put("Infobip_No_Of_Retry", objWorkList.getVal("Infobip_No_Of_Retry"));
+						dataMap.put("MobileNumber", objWorkList.getVal("MobileNumber"));
+						dataMap.put("SMS_Content", objWorkList.getVal("SMS_Content"));
 
-						logger.info("Values fetched from DB: " + Infobip_EventID + "\n" + Processname + "\n" + WI_NAME
-								+ "\n" + AlertID + "\n" + CIF + "\n" + Dynamic_Tags + "\n" + Dynamic_Values + "\n"
-								+ Trigger_Status + "\n" + Infobip_No_Of_Retry + "\n" + MobileNumber + "\n"
-								+ SMS_Content);
-
-						if ("".equals(Infobip_No_Of_Retry) || Infobip_No_Of_Retry == null) {
-							Infobip_No_Of_Retry = "0";
+						if ("".equals(dataMap.get("Infobip_No_Of_Retry")) || dataMap.get("Infobip_No_Of_Retry") == null) {
+							dataMap.put("Infobip_No_Of_Retry", "0");
 						}
-						if (Integer.parseInt(Infobip_No_Of_Retry) < 5) {
-							// Store data for later processing
-							Map<String, String> dataMap = new HashMap<>();
-							dataMap.put("Infobip_EventID", Infobip_EventID);
-							dataMap.put("Processname", Processname);
-							dataMap.put("WI_NAME", WI_NAME);
-							dataMap.put("AlertID", AlertID);
-							dataMap.put("CIF", CIF);
-							dataMap.put("Dynamic_Tags", Dynamic_Tags);
-							dataMap.put("Dynamic_Values", Dynamic_Values);
-							dataMap.put("Alert_Status", Trigger_Status);
-							dataMap.put("Infobip_No_Of_Retry", Infobip_No_Of_Retry);
-							// change by faizan khan 22-8-2025 start
-							dataMap.put("MobileNumber", MobileNumber);
-							dataMap.put("SMS_Content", SMS_Content);
-
-							// change by faizan khan 22-8-2025 start
-
+						if (Integer.parseInt(dataMap.get("Infobip_No_Of_Retry")) < MAX_RETRY) {
 							dataList.add(dataMap);
 						}
 					}
-
-					// changed by faizan khan 26-8-2025 start
 
 					for (Map<String, String> data : dataList) {
 						String Infobip_EventID = data.get("Infobip_EventID");
@@ -175,125 +140,92 @@ public class InfoBipCIFSMS implements Runnable {
 						String dynamicURL = baseUrl + "/peopleevents/2/persons/" + CIF_ID + "." + CIF_ID
 								+ "/definitions/" + AlertID + "/events";
 
-						String[] tags = Dynamic_Tags.split("~");
-						String[] values = Dynamic_Values.split("~#~");
-
-						logger.info("Tags Array: " + Arrays.toString(tags));
-						logger.info("Values Array: " + Arrays.toString(values));
+						String[] tags = Dynamic_Tags != null ? Dynamic_Tags.split("~") : new String[0];
+						String[] values = Dynamic_Values != null ? Dynamic_Values.split("~#~") : new String[0];
 
 						Map<String, String> map = new HashMap<>();
-						try {
-							for (int i = 0; i < tags.length; i++) {
-								map.put(tags[i], values[i]);
-							}
-						} catch (Exception e) {
-							logger.error("Exception while iterating tags: " + CentralRunner.customException(e));
+						int minLength = Math.min(tags.length, values.length);
+						for (int i = 0; i < minLength; i++) {
+							map.put(tags[i], values[i]);
 						}
 
-						logger.info("Final Map: " + map);
-						JSONObject reqBody = new JSONObject(map);
 						JSONObject finalRequestJSON = new JSONObject();
-						finalRequestJSON.put("properties", reqBody);
+						finalRequestJSON.put("properties", new JSONObject(map));
 
-						// Add fallbackDetails object
 						JSONObject fallbackDetails = new JSONObject();
 						fallbackDetails.put("mobileNo", Mobile_Number);
 						fallbackDetails.put("smsMessage", SMS_Content);
-
 						finalRequestJSON.put("fallbackDetails", fallbackDetails);
 
 						String requestBody = finalRequestJSON.toString();
-						logger.info("Final JSON Request: " + requestBody);
-
-						// String requestBody = finalRequestJSON.toString();
-						// Call the POST API
 						String requestTime = getCurrentTime();
 
-						if ("".equalsIgnoreCase(Dynamic_Tags) || Dynamic_Tags.length() == 0) {
-							// requestBody = "{\r\n" + "\"properties\":\r\n"
-							// +
-							// "{}\r\n" + "}";
-
-							requestBody = "{\r\n" + "\"properties\": {},\r\n" + "\"fallbackDetails\": {\r\n"
-									+ "   \"mobileNo\": \"" + Mobile_Number + "\",\r\n" + "   \"smsMessage\": \""
-									+ SMS_Content + "\"\r\n" + "}\r\n" + "}";
+						if (Dynamic_Tags == null || Dynamic_Tags.trim().isEmpty()) {
+							requestBody = "{\n" + "\"properties\": {},\n" + "\"fallbackDetails\": {\n"
+									+ "   \"mobileNo\": \"" + Mobile_Number + "\",\n" + "   \"smsMessage\": \"" + SMS_Content
+									+ "\"\n" + "}\n" + "}";
 						}
 
-						logger.info("Final Request JSON:\n" + requestBody);
-						logger.info("Final Request URL:\n" + dynamicURL);
-						logger.info("CIF before null check:\n" + data.get("CIF").length());
-
-						if ("".equalsIgnoreCase(data.get("CIF")) || data.get("CIF").length() == 0) {
-
-							logger.info("Inside if CIF if Blank");
-
+						// 🔥 FIX: Safe CIF null check
+						if (CIF_ID == null || CIF_ID.trim().isEmpty()) {
+							logger.info("Inside Non-CIF flow");
 							String requestBodynonCif = "{\n" + "  \"messages\": [\n" + "    {\n"
 									+ "      \"from\": \"RAKBANK\",\n" + "      \"destinations\": [\n" + "        {\n"
 									+ "          \"to\": \"{{MOBILE}}\"\n" + "        }\n" + "      ],\n"
 									+ "      \"text\": \"{{MESSAGE}}\"\n" + "    }\n" + "  ]\n" + "}";
-
 							String finalJsonforNonCif = requestBodynonCif.replace("{{MOBILE}}", Mobile_Number)
 									.replace("{{MESSAGE}}", SMS_Content);
 
-							logger.info("Final Request Body: " + finalJsonforNonCif);
-
-							requestTime = getCurrentTime();
 							String output = NonCIFSMSPostApi(URL, finalJsonforNonCif);
 							String[] postAPIResponse = output.split("~");
 							int responseCode = Integer.parseInt(postAPIResponse[0]);
-
-							// Capture the request and response time
-							String responseTime = getCurrentTime();
 							String responseJson = postAPIResponse[1];
-							logger.info("Response JSON: " + responseJson);
+							String responseTime = getCurrentTime();
+
 							crObj.pushDataIntoDB(cabinetName, SessionId, "NG_INFOBIP_JSON_LOGHISTORY", Infobip_EventID,
 									requestTime, responseTime, finalJsonforNonCif, responseJson, logger);
 
-							if (responseCode == 200) {
-								logger.info("SMS API executed successfully: " + Infobip_EventID);
-								// status = D, No of tries +1, response message
+							// 🔥 FIX: handle 500 separately
+							if (responseCode == 500) {
+								logger.error("500 error - No retry. EventID: " + Infobip_EventID);
 								crObj.updateUSRTable(cabinetName, SessionId, responseCode, responseJson,
 										Infobip_No_Of_Retry, Infobip_EventID, "USR_0_INFOBIP_SMS_QUEUETABLE", logger);
-
+							} else if (responseCode == 200) {
+								logger.info("SMS API executed successfully: " + Infobip_EventID);
+								crObj.updateUSRTable(cabinetName, SessionId, responseCode, responseJson,
+										Infobip_No_Of_Retry, Infobip_EventID, "USR_0_INFOBIP_SMS_QUEUETABLE", logger);
 							} else {
 								logger.error("SMS API Failed for eventID: " + Infobip_EventID);
 								crObj.updateUSRTable(cabinetName, SessionId, responseCode, responseJson,
 										Infobip_No_Of_Retry, Infobip_EventID, "USR_0_INFOBIP_SMS_QUEUETABLE", logger);
 							}
-
 						} else {
 							String output = CIFSMSpostAPI(dynamicURL, requestBody);
 							String[] postAPIResponse = output.split("~");
 							int responseCode = Integer.parseInt(postAPIResponse[0]);
 							String responseJson = postAPIResponse[1];
-
-							// Capture the request and response time
 							String responseTime = getCurrentTime();
-							// String requestJson = finalRequestJSON.toString();
 
 							crObj.pushDataIntoDB(cabinetName, SessionId, "NG_INFOBIP_JSON_LOGHISTORY", Infobip_EventID,
 									requestTime, responseTime, requestBody, responseJson, logger);
 
-							if (responseCode == 200) {
-								logger.info("SMS sent successfully for CIF_ID: " + CIF_ID + ", AlertID: " + AlertID);
-								// status = D, No of tries +1, response message
+							// 🔥 FIX: handle 500 separately
+							if (responseCode == 500) {
+								logger.error("500 error - No retry. CIF_ID: " + CIF_ID + ", AlertID: " + AlertID);
 								crObj.updateUSRTable(cabinetName, SessionId, responseCode, responseJson,
 										Infobip_No_Of_Retry, Infobip_EventID, "USR_0_INFOBIP_SMS_QUEUETABLE", logger);
-
+							} else if (responseCode == 200) {
+								logger.info("SMS sent successfully for CIF_ID: " + CIF_ID + ", AlertID: " + AlertID);
+								crObj.updateUSRTable(cabinetName, SessionId, responseCode, responseJson,
+										Infobip_No_Of_Retry, Infobip_EventID, "USR_0_INFOBIP_SMS_QUEUETABLE", logger);
 							} else {
-
 								logger.error("SMS failed for CIF_ID: " + CIF_ID + ", AlertID: " + AlertID
 										+ ". Response code: " + responseCode);
 								crObj.updateUSRTable(cabinetName, SessionId, responseCode, responseJson,
 										Infobip_No_Of_Retry, Infobip_EventID, "USR_0_INFOBIP_SMS_QUEUETABLE", logger);
-								// status = P, No of tries +1, response message
 							}
 						}
-
 					}
-
-					// changed by faizan khan 26-8-2025 END
-
 				}
 			} else {
 				logger.info("Out of time range....sleeping");
@@ -304,133 +236,84 @@ public class InfoBipCIFSMS implements Runnable {
 		}
 
 		logger.info("CIF Thread Ended : ");
-		// try {
-		// Thread.sleep(SMSAutoService.sleepTimeToWait);
-		// } catch (Exception thread) {
-		// logger.info("Thread = " + thread);
-		// }
 	}
 
 	public static String CIFSMSpostAPI(String URL, String requestBody) {
 		try {
-			// Load SSL certs or custom trust settings
 			CentralRunner.loadSSL();
-
-			// Open URL connection
 			URL postUrl = new URL(URL);
 			HttpURLConnection postConnection = (HttpURLConnection) postUrl.openConnection();
-			logger.info("After URL connection:");
-
-			// Set request method and headers
 			postConnection.setRequestMethod("POST");
 			postConnection.setRequestProperty("Accept", "application/json");
 			postConnection.setRequestProperty("Content-Type", "application/json");
 			postConnection.setRequestProperty("source", "BPM");
 			postConnection.setDoOutput(true);
 
-			// Send request
-			logger.info("After JSON Request Construction: " + requestBody);
 			try (DataOutputStream outputStream = new DataOutputStream(postConnection.getOutputStream())) {
 				outputStream.writeBytes(requestBody);
 				outputStream.flush();
 			}
 
-			logger.info("After Output Stream flush");
-
-			// Read response
 			int postResponseCode = postConnection.getResponseCode();
-			logger.info("Response Code: " + postResponseCode);
-
 			StringBuilder postResponse = new StringBuilder();
 			try (BufferedReader reader = new BufferedReader(new InputStreamReader(
 					postResponseCode >= 400 ? postConnection.getErrorStream() : postConnection.getInputStream()))) {
-				logger.info("Inside Response from Input Stream");
 				String inputLine;
 				while ((inputLine = reader.readLine()) != null) {
 					postResponse.append(inputLine);
 				}
 			}
-
-			// Create response JSON
-			// JSONObject jsonResponse = new JSONObject();
-			// jsonResponse.put("statusCode", postResponseCode);
-			// jsonResponse.put("responseBody", new
-			// JSONObject(postResponse.toString()));
-
-			logger.info("Final JSON Response: " + postResponse);
 			postConnection.disconnect();
-
 			return postResponseCode + "~" + postResponse.toString();
 
 		} catch (IOException ioEx) {
 			logger.error("HTTP Connection Error: " + ioEx.getMessage(), ioEx);
-			return "-1~Failure " + ioEx.getMessage(); // indicate connection
-														// failure
+			return "-1~Failure " + ioEx.getMessage();
 		} catch (Exception e) {
 			logger.error("General Error: " + e.getMessage(), e);
-			return "-2~ " + e.getMessage(); // indicate general failure
+			return "-2~ " + e.getMessage();
 		}
 	}
 
-	// Implement getCurrentTime method
 	private String getCurrentTime() {
-		// Logic to get the current time in the required format
 		return java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss.SSS"));
 	}
 
 	public static String NonCIFSMSPostApi(String URL, String requestBody) {
 		String dynamicURL = URL + "/sms/2/text/advanced";
 		try {
-			// POST Request
 			CentralRunner.loadSSL();
 			URL postUrl = new URL(dynamicURL);
 			HttpURLConnection postConnection = (HttpURLConnection) postUrl.openConnection();
-			logger.debug("After NON-CIFSMS  URL connection:");
-
-			// Set request method and headers
 			postConnection.setRequestMethod("POST");
 			postConnection.setRequestProperty("Accept", "application/json");
 			postConnection.setRequestProperty("Content-Type", "application/json");
 			postConnection.setRequestProperty("source", "BPM");
 			postConnection.setDoOutput(true);
 
-			logger.debug("After JSON Request Construction: " + requestBody);
-
 			try (DataOutputStream outputStream = new DataOutputStream(postConnection.getOutputStream())) {
 				outputStream.writeBytes(requestBody);
 				outputStream.flush();
 			}
 
-			logger.debug("After Output Stream flush");
-
 			int postResponseCode = postConnection.getResponseCode();
-			logger.debug("Response Code: " + postResponseCode);
-
 			StringBuilder postResponse = new StringBuilder();
 			try (BufferedReader reader = new BufferedReader(new InputStreamReader(
 					postResponseCode >= 400 ? postConnection.getErrorStream() : postConnection.getInputStream()))) {
-				logger.debug("Inside Response from Input Stream");
 				String inputLine;
 				while ((inputLine = reader.readLine()) != null) {
 					postResponse.append(inputLine);
 				}
 			}
-
-			logger.debug("Final JSON Response: " + postResponse);
-
-			// Close connections
 			postConnection.disconnect();
 			return postResponseCode + "~" + postResponse.toString();
 
 		} catch (IOException ioEx) {
 			logger.error("HTTP Connection Error: " + ioEx.getMessage(), ioEx);
-			return "-1~Failure"; // indicate connection failure
+			return "-1~Failure: " + ioEx.getMessage();
 		} catch (Exception e) {
 			logger.error("Error: " + e.getMessage());
-			e.printStackTrace();
 			return "Exception Occured in: " + e.getMessage();
 		}
-
 	}
-
 }
