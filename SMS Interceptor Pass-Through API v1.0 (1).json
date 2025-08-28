@@ -1,34 +1,4 @@
-INSERT INTO Infobip_SMS_Log
-(
-    Infobip_EventID,
-    Processname,
-    WI_NAME,
-    AlertID,
-    InsertedDateTime,
-    CIF,
-    Dynamic_Tags,
-    Dynamic_Values,
-    Alert_Status,
-    Infobip_Response_Code,
-    Infobip_Response_Message,
-    Infobip_No_Of_Retry,
-    MobileNumber,
-    SMS_Content
-)
-VALUES
-(
-    278,
-    'BAIS',
-    'BAIS-0000002878-Process',
-    'BPMPWB3',
-    '2025-06-03 08:03:06',
-    3486454,
-    'TradeLicense',
-    'TL56562655',
-    'P',
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL
-);
+SMSquery = "INSERT INTO USR_0_INFOBIP_SMS_QUEUETABLE (Processname,WI_NAME,AlertID,InsertedDateTime,CIF,Dynamic_Tags,Dynamic_Values,Alert_Status,MobileNumber,SMS_Content) VALUES "
+							+ "('" + processName + "','" + getWorkitemName(iformObj) + "','" + Infobip_Alert_ID + "',"
+							+ "format(getdate(),'yyyy-MM-dd HH:mm:ss.fff')" + ",'" + CIF + "','" + Infobip_Dynamic_Tags
+							+ "','" + dynamicValues + "','P','" + SMS_MOBNO + ",'" + SMSTemplate + "')";
