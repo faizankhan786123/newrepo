@@ -1,4 +1,13 @@
-SMSquery = "INSERT INTO USR_0_INFOBIP_SMS_QUEUETABLE (Processname,WI_NAME,AlertID,InsertedDateTime,CIF,Dynamic_Tags,Dynamic_Values,Alert_Status,MobileNumber,SMS_Content) VALUES "
-							+ "('" + processName + "','" + getWorkitemName(iformObj) + "','" + Infobip_Alert_ID + "',"
-							+ "format(getdate(),'yyyy-MM-dd HH:mm:ss.fff')" + ",'" + CIF + "','" + Infobip_Dynamic_Tags
-							+ "','" + dynamicValues + "','P','" + SMS_MOBNO + ",'" + SMSTemplate + "')";
+SMSquery = "INSERT INTO USR_0_INFOBIP_SMS_QUEUETABLE "
+        + "(Processname, WI_NAME, AlertID, InsertedDateTime, CIF, Dynamic_Tags, Dynamic_Values, Alert_Status, MobileNumber, SMS_Content) "
+        + "VALUES ("
+        + "'" + processName + "',"
+        + "'" + getWorkitemName(iformObj) + "',"
+        + "'" + Infobip_Alert_ID + "',"
+        + "format(getdate(),'yyyy-MM-dd HH:mm:ss.fff'),"
+        + "'" + CIF + "',"
+        + "'" + Infobip_Dynamic_Tags + "',"
+        + "'" + dynamicValues + "',"
+        + "'P',"
+        + "'" + SMS_MOBNO + "',"
+        + "'" + SMSTemplate + "')";
